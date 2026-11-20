@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WA Quick Sender</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <header class="top">
+    <img src="icons/icon32.png" alt="" width="28" height="28">
+    <h1>WA Quick Sender</h1>
+    <div class="userbar" id="userBar" hidden>
+      <span id="userEmail" class="user-email"></span>
+      <button type="button" id="logoutBtn" class="btn-link">Log out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- LOGIN: only emails registered with us can use the extension -->
+    <section id="loginView" class="card" hidden aria-labelledby="h-login">
+      <h2 id="h-login">Log in</h2>
+      <p class="muted small">Use the email address that is registered with us.</p>
+      <p id="cfgWarn" class="warn" hidden>The server address is not set yet. Open <code>config.js</code> in the extension folder, set <code>API_BASE</code>, then reload the extension.</p>
+      <form id="loginForm" class="login-form" novalidate>
+        <label for="loginEmail" class="label">Email</label>
+        <input type="email" id="loginEmail" autocomplete="username" placeholder="you@example.com">
+        <label for="loginPass" class="label">Password</label>
+        <input type="password" id="loginPass" autocomplete="current-password">
+        <p id="loginErr" class="err small" role="alert"></p>
+        <button type="submit" id="loginBtn" class="btn btn-start btn-block">Log in</button>
+      </form>
+      <p class="small"><a id="registerLink" href="#" target="_blank" rel="noopener">Request an account</a></p>
+    </section>
+
+    <div id="appView" hidden>
+    <div id="formSections">
+      <!-- 1. RECIPIENTS -->
+      <section class="card" aria-labelledby="h-rec">
+        <h2 id="h-rec">1. Recipients</h2>
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tabChats" aria-selected="true" aria-controls="paneChats">Chats &amp; Groups</button>
+          <button type="button" role="tab" id="tabNumbers" aria-selected="false" aria-controls="paneNumbers">Numbers</button>
+        </div>
+
+        <div id="paneChats" role="tabpanel">
+          <button type="button" id="loadChatsBtn" class="btn btn-secondary btn-block">Load my chats</button>
+          <input type="search" id="chatSearch" placeholder="Search chats" aria-label="Search loaded chats" autocomplete="off">
+          <div class="row">
+            <button type="button" id="selectVisibleBtn" class="btn btn-ghost">Select all visible</button>
+            <button type="button" id="clearSelBtn" class="btn btn-ghost">Clear</button>
+          </div>
+          <div id="chatList" class="chat-list" role="list"></div>
+          <p id="chatSummary" class="muted small"></p>
+          <label for="manualNames" class="label">Add group/chat name manually <span class="muted">(one per line, exact name)</span></label>
+          <textarea id="manualNames" rows="3" placeholder="Family group&#10;Priya Sharma"></textarea>
+        </div>
+
+        <div id="paneNumbers" role="tabpanel" hidden>
+          <div class="row">
+            <label for="ccSelect" class="label inline">Default country code</label>
+            <select id="ccSelect" aria-label="Default country code"></select>
+          </div>
+          <textarea id="numbersText" rows="6" placeholder="Paste numbers, one per line or comma separated&#10;98765 43210&#10;+91 98765-43211&#10;0091 98765 43212"></textarea>
+          <div class="row">
+            <button type="button" id="importCsvBtn" class="btn btn-secondary">Import CSV</button>
+            <input type="file" id="csvInput" accept=".csv,text/csv,text/plain" hidden>
+          </div>
+          <p id="numSummary" class="small"></p>
+          <div id="invalidList" class="chips"></div>
+        </div>
+      </section>
+
+      <!-- 2. MESSAGE -->
+      <section class="card" aria-labelledby="h-msg">
+        <h2 id="h-msg">2. Message</h2>
+        <textarea id="message" rows="7" placeholder="Type your message. Use {name} to insert the recipient's name when it is known."></textarea>
+        <div class="row space"><span id="charCount" class="muted small"></span><span id="msgErr" class="err small"></span></div>
+        <div class="preview">
+          <div class="preview-label muted small" id="previewNote"></div>
+          <div id="previewBox" class="bubble"></div>
+        </div>
+      </section>
+
+      <!-- 3. ATTACHMENT -->
+      <section class="card" aria-labelledby="h-att">
+        <h2 id="h-att">3. Image / file <span class="muted">(optional)</span></h2>
+        <button type="button" id="attachBtn" class="btn btn-secondary btn-block">Attach image or file</button>
+        <input type="file" id="fileInput" hidden>
+        <p class="muted small">Pick an image (or video, PDF, any file). It is sent automatically with your message as the caption — no clicking needed. Limits: photos/videos 16 MB, other files 100 MB; caption max 1024 characters.</p>
+        <div id="fileInfo" class="file-info" hidden>
+          <img id="filePreview" alt="Preview of the attached image" hidden>
+          <div class="file-text">
+            <div id="fileName" class="file-name"></div>
+            <div id="fileMeta" class="muted small"></div>
+          </div>
+          <button type="button" id="removeFileBtn" class="btn btn-ghost" aria-label="Remove attachment">Remove</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- 4. SETTINGS (stays editable while a campaign is running) -->
+      <details class="card" id="settingsBox">
+        <summary><span class="h2-like">4. Settings</span></summary>
+        <div class="field">
+          <span class="label">Delay between messages (random)</span>
+          <div class="row">
+            <label class="inline-label" for="delayMinInput">From <input type="number" id="delayMinInput" min="1" max="20" step="1" inputmode="numeric"></label>
+            <label class="inline-label" for="delayMaxInput">to <input type="number" id="delayMaxInput" min="1" max="20" step="1" inputmode="numeric"></label>
+            <span class="muted">seconds</span>
+          </div>
+          <p class="muted small">Each wait is a random number of seconds inside this range (1–20 seconds).</p>
+        </div>
+        <div class="field">
+          <span class="label">Daily limit</span>
+          <p id="limitInfo" class="muted small"></p>
+        </div>
+        <label class="switch"><input type="checkbox" id="darkToggle"> <span>Dark mode</span></label>
+      </details>
+
+    <!-- 5. START / STOP -->
+    <section id="startBox" class="start-box">
+      <p class="warn">Sending many automated messages can get your WhatsApp account restricted. Use small batches.</p>
+      <p id="totalRecipients" class="small"></p>
+      <button type="button" id="startBtn" class="btn btn-start btn-block">Start Sending</button>
+      <p id="startHint" class="muted small"></p>
+    </section>
+
+    <section id="runBox" class="card" hidden aria-labelledby="h-run">
+      <h2 id="h-run">Sending</h2>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="barOuter"><div id="barInner"></div></div>
+      <p id="progressText" class="small"></p>
+      <p id="currentLine" class="current" aria-live="polite"></p>
+      <div class="row run-buttons" id="runButtons">
+        <button type="button" id="pauseBtn" class="btn btn-secondary">Pause</button>
+        <button type="button" id="resumeBtn" class="btn btn-secondary">Resume</button>
+        <button type="button" id="stopBtn" class="btn btn-danger">Stop</button>
+      </div>
+      <div id="finishBox" hidden>
+        <p id="finishText" class="finish"></p>
+        <div class="row">
+          <button type="button" id="downloadBtn" class="btn btn-secondary">Download results CSV</button>
+          <button type="button" id="newBtn" class="btn btn-ghost">New campaign</button>
+        </div>
+      </div>
+      <ul id="runList" class="run-list"></ul>
+    </section>
+    </div><!-- /appView -->
+  </main>
+
+  <div id="toasts" aria-live="polite"></div>
+
+  <dialog id="confirmDlg">
+    <form method="dialog">
+      <p id="confirmText" class="confirm-text"></p>
+      <p id="confirmNote" class="muted small"></p>
+      <div class="row">
+        <button type="submit" value="cancel" class="btn btn-secondary">Cancel</button>
+        <button type="submit" value="ok" class="btn btn-start">Yes, send</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="shared.js"></script>
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>
